@@ -27,9 +27,13 @@ if __name__ == '__main__':
     if not os.path.exists(args.results_dir):
         os.mkdir(args.results_dir)
 
+    # it looks like chemo_coeff and radio_coeff doesn't matter once we have our own database.
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-    pickle_map = get_cancer_sim_data(chemo_coeff=args.chemo_coeff, radio_coeff=args.radio_coeff, b_load=False,
-                                          b_save=False, model_root=args.results_dir)
+    pickle_map = get_cancer_sim_data(chemo_coeff=args.chemo_coeff,
+                                     radio_coeff=args.radio_coeff,
+                                     b_load=True,
+                                     b_save=True,
+                                     model_root=args.results_dir)
 
     encoder_model_name = 'encoder_' + args.model_name
     encoder_hyperparams_file = '{}/{}_best_hyperparams.txt'.format(args.results_dir, encoder_model_name)

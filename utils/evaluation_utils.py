@@ -47,16 +47,20 @@ def get_processed_data(raw_sim_data,
     """
     mean, std = scaling_params
 
-    horizon = 1
-    offset = 1
+    horizon = 1  # for the encoder, we perform "one-step ahead prediction"
+    offset = 1 # to do one-step ahead, remove the final one
 
-    mean['chemo_application'] = 0
+    mean['chemo_application'] = 0  # application = treatment
     mean['radio_application'] = 0
     std['chemo_application'] = 1
     std['radio_application'] = 1
 
     input_means = mean[
         ['cancer_volume', 'patient_types', 'chemo_application', 'radio_application']].values.flatten()
+    # v is the patient_type
+    # y is cancer_volume
+    # a is applicatioin
+    # x is
     input_stds = std[['cancer_volume', 'patient_types', 'chemo_application', 'radio_application']].values.flatten()
 
     # Continuous values
@@ -75,7 +79,7 @@ def get_processed_data(raw_sim_data,
     treatments = np.concatenate(
         [chemo_application[:, :-offset, np.newaxis], radio_application[:, :-offset, np.newaxis]], axis=-1)
 
-    one_hot_treatments = np.zeros(shape=(treatments.shape[0], treatments.shape[1], 4))
+    one_hot_treatments = np.zeros(shape=(treatments.shape[0], treatments.shape[1], 4)) # this 4 means dimension of one-hot vector.
     for patient_id in range(treatments.shape[0]):
         for timestep in range(treatments.shape[1]):
             if (treatments[patient_id][timestep][0] == 0 and treatments[patient_id][timestep][1] == 0):
@@ -89,21 +93,22 @@ def get_processed_data(raw_sim_data,
 
     one_hot_previous_treatments = one_hot_treatments[:, :-1, :]
 
+    # covariates are only volume and type (two) in this case
     current_covariates = np.concatenate(
         [cancer_volume[:, :-offset, np.newaxis], patient_types[:, :-offset, np.newaxis]], axis=-1)
-    outputs = cancer_volume[:, horizon:, np.newaxis]
+    outputs = cancer_volume[:, horizon:, np.newaxis] # volume is y in this case.
 
     output_means = mean[['cancer_volume']].values.flatten()[0]  # because we only need scalars here
     output_stds = std[['cancer_volume']].values.flatten()[0]
 
     print(outputs.shape)
 
-    # Add active entires
+    # Add active entries
     active_entries = np.zeros(outputs.shape)
 
-    for i in range(sequence_lengths.shape[0]):
+    for i in range(sequence_lengths.shape[0]): # number of different patient ids
         sequence_length = int(sequence_lengths[i])
-        active_entries[i, :sequence_length, :] = 1
+        active_entries[i, :sequence_length, :] = 1 #in this way, we manage the varying length of each patients.
 
     raw_sim_data['current_covariates'] = current_covariates
     raw_sim_data['previous_treatments'] = one_hot_previous_treatments
