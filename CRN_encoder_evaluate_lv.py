@@ -113,20 +113,20 @@ def test_CRN_encoder(
     validation_processed = get_processed_data(validation_data, scaling_data)
     test_processed = get_processed_data(test_data, scaling_data)
 
-    fit_CRN_encoder(
-        dataset_train=training_processed,
-        dataset_val=validation_processed,
-        model_name=encoder_model_name,
-        model_dir=models_dir,
-        hyperparams_file=encoder_hyperparams_file,
-        b_hyperparam_opt=b_encoder_hyperparm_tuning,
-    )
+    # fit_CRN_encoder(
+    #     dataset_train=training_processed,
+    #     dataset_val=validation_processed,
+    #     model_name=encoder_model_name,
+    #     model_dir=models_dir,
+    #     hyperparams_file=encoder_hyperparams_file,
+    #     b_hyperparam_opt=b_encoder_hyperparm_tuning,
+    # )
 
     CRN_encoder = load_trained_model(
         validation_processed, encoder_hyperparams_file, encoder_model_name, models_dir
     )
     mean_mse, mse = CRN_encoder.evaluate_predictions(test_processed)
 
-    rmse = (np.sqrt(np.mean(mse))) / 1150 * 100  # Max tumour volume = 1150
+    rmse = (np.sqrt(np.mean(mse[:-1]))) / 1150 * 100  # Max tumour volume = 1150
 
     return rmse

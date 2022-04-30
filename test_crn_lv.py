@@ -5,8 +5,8 @@ import argparse
 import logging
 import pickle
 
-from CRN_encoder_evaluate import test_CRN_encoder
-from CRN_decoder_evaluate import test_CRN_decoder
+from CRN_encoder_evaluate_lv import test_CRN_encoder
+from CRN_decoder_evaluate_lv import test_CRN_decoder
 from utils.cancer_simulation import get_cancer_sim_data
 
 
@@ -47,13 +47,13 @@ if __name__ == "__main__":
     if not os.path.exists(models_dir):
         os.mkdir(models_dir)
 
-    # rmse_encoder = test_CRN_encoder(
-    #     pickle_map=pickle_map,
-    #     models_dir=models_dir,
-    #     encoder_model_name=encoder_model_name,
-    #     encoder_hyperparams_file=encoder_hyperparams_file,  # model name
-    #     b_encoder_hyperparm_tuning=args.b_encoder_hyperparm_tuning,  # boolean
-    # )
+    rmse_encoder = test_CRN_encoder(
+        pickle_map=pickle_map,
+        models_dir=models_dir,
+        encoder_model_name=encoder_model_name,
+        encoder_hyperparams_file=encoder_hyperparams_file,  # model name
+        b_encoder_hyperparm_tuning=args.b_encoder_hyperparm_tuning,  # boolean
+    )
 
     decoder_model_name = "decoder_" + args.model_name
     decoder_hyperparams_file = "{}/{}_best_hyperparams.txt".format(
@@ -65,8 +65,11 @@ if __name__ == "__main__":
     projection horizon of 5 timesteps.    
     """
 
-    max_projection_horizon = 5
-    projection_horizon = 5
+    # max_projection_horizon = 5
+    # projection_horizon = 5
+
+    max_projection_horizon = 2
+    projection_horizon = 2
 
     rmse_decoder = test_CRN_decoder(
         pickle_map=pickle_map,
@@ -80,11 +83,11 @@ if __name__ == "__main__":
         b_decoder_hyperparm_tuning=args.b_decoder_hyperparm_tuning,
     )
 
-    logging.info(
-        "Chemo coeff {} | Radio coeff {}".format(args.chemo_coeff, args.radio_coeff)
-    )
+    # logging.info(
+    #     "Chemo coeff {} | Radio coeff {}".format(args.chemo_coeff, args.radio_coeff)
+    # )
     print("RMSE for one-step-ahead prediction.")
     print(rmse_encoder)
 
-    print("Results for 5-step-ahead prediction.")
+    print(f"Results for {max_projection_horizon}-step-ahead prediction.")
     print(rmse_decoder)

@@ -4,7 +4,7 @@ import logging
 import pickle
 import numpy as np
 
-from utils.evaluation_utils import (
+from utils.evaluation_utils_lv import (
     get_processed_data,
     get_mse_at_follow_up_time,
     load_trained_model,
@@ -257,9 +257,10 @@ def process_counterfactual_seq_test_data(
         + data_map["output_means"],
         "output_means": data_map["output_means"],
         "output_stds": data_map["output_stds"],
-        "patient_types": test_data["patient_types"],
-        "patient_ids_all_trajectories": test_data["patient_ids_all_trajectories"],
-        "patient_current_t": test_data["patient_current_t"],
+        # "patient_types": test_data["patient_types"],
+        "patient_types": test_data["naics"],
+        # "patient_ids_all_trajectories": test_data["patient_ids_all_trajectories"],
+        # "patient_current_t": test_data["patient_current_t"],
     }
 
     return seq2seq_data_map
@@ -295,18 +296,21 @@ def test_CRN_decoder(
         validation_processed, validation_br_states, max_projection_horizon
     )
 
-    fit_CRN_decoder(
-        dataset_train=training_seq_processed,
-        dataset_val=validation_seq_processed,
-        model_dir=models_dir,
-        model_name=decoder_model_name,
-        encoder_hyperparams_file=encoder_hyperparams_file,
-        decoder_hyperparams_file=decoder_hyperparams_file,
-        b_hyperparam_opt=b_decoder_hyperparm_tuning,
-    )
+    # fit_CRN_decoder(
+    #     dataset_train=training_seq_processed,
+    #     dataset_val=validation_seq_processed,
+    #     model_dir=models_dir,
+    #     model_name=decoder_model_name,
+    #     encoder_hyperparams_file=encoder_hyperparams_file,
+    #     decoder_hyperparams_file=decoder_hyperparams_file,
+    #     b_hyperparam_opt=b_decoder_hyperparm_tuning,
+    # )
 
-    test_data_seq_actions = pickle_map["test_data_seq"]
-    test_processed = get_processed_data(pickle_map["test_data_seq"], scaling_data)
+    # test_data_seq_actions = pickle_map["test_data_seq"]
+    test_data = pickle_map["test_data"]
+    # test_processed = get_processed_data(pickle_map["test_data_seq"], scaling_data)
+    test_processed = get_processed_data(test_data, scaling_data)
+
     encoder_model = load_trained_model(
         test_processed, encoder_hyperparams_file, encoder_model_name, models_dir
     )
@@ -314,7 +318,8 @@ def test_CRN_decoder(
     test_br_outputs = encoder_model.get_predictions(test_processed)
 
     test_seq_processed = process_counterfactual_seq_test_data(
-        test_data_seq_actions, test_processed, test_br_states, projection_horizon
+        # test_data_seq_actions, test_processed, test_br_states, projection_horizon
+        test_data, test_processed, test_br_states, projection_horizon
     )
     CRN_deocoder = load_trained_model(
         test_seq_processed,
@@ -325,7 +330,8 @@ def test_CRN_decoder(
     )
 
     seq_predictions = CRN_deocoder.get_autoregressive_sequence_predictions(
-        test_data_seq_actions,
+        # test_data_seq_actions,
+        test_data,
         test_processed,
         test_br_states,
         test_br_outputs,
@@ -347,5 +353,7 @@ def test_CRN_decoder(
         test_seq_processed["active_entries"][not_nan],
     )
 
-    rmse = np.sqrt(mse[projection_horizon - 1]) / 1150 * 100  # Max tumour volume = 1150
+    # rmse = np.sqrt(mse[projection_horizon - 1]) / 1150 * 100  # Max tumour volume = 1150
+    rmse = np.sqrt(mse[projection_horizon - 1]) / 8622 * 100  # Max tumour volume = 1150
+
     return rmse
