@@ -3,6 +3,7 @@
 import os
 import argparse
 import logging
+import pickle
 
 from CRN_encoder_evaluate import test_CRN_encoder
 from CRN_decoder_evaluate import test_CRN_decoder
@@ -11,8 +12,8 @@ from utils.cancer_simulation import get_cancer_sim_data
 
 def init_arg():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--chemo_coeff", default=2, type=int)
-    parser.add_argument("--radio_coeff", default=2, type=int)
+    # parser.add_argument("--chemo_coeff", default=2, type=int)
+    # parser.add_argument("--radio_coeff", default=2, type=int)
     parser.add_argument("--results_dir", default="results")
     parser.add_argument("--model_name", default="crn_test_2")
     parser.add_argument("--b_encoder_hyperparm_tuning", default=False)
@@ -29,13 +30,13 @@ if __name__ == "__main__":
 
     # it looks like chemo_coeff and radio_coeff doesn't matter once we have our own database.
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
-    pickle_map = get_cancer_sim_data(
-        chemo_coeff=args.chemo_coeff,
-        radio_coeff=args.radio_coeff,
-        b_load=True,
-        b_save=True,
-        model_root=args.results_dir,
-    )
+    # pickle_map = get_cancer_sim_data(chemo_coeff=args.chemo_coeff,
+    #                                  radio_coeff=args.radio_coeff,
+    #                                  b_load=True,
+    #                                  b_save=True,
+    #                                  model_root=args.results_dir)
+    with open("./data/pickle_map_lv", "rb") as handle:
+        pickle_map = pickle.load(handle)
 
     encoder_model_name = "encoder_" + args.model_name
     encoder_hyperparams_file = "{}/{}_best_hyperparams.txt".format(
@@ -50,8 +51,8 @@ if __name__ == "__main__":
         pickle_map=pickle_map,
         models_dir=models_dir,
         encoder_model_name=encoder_model_name,
-        encoder_hyperparams_file=encoder_hyperparams_file,
-        b_encoder_hyperparm_tuning=args.b_encoder_hyperparm_tuning,
+        encoder_hyperparams_file=encoder_hyperparams_file,  # model name
+        b_encoder_hyperparm_tuning=args.b_encoder_hyperparm_tuning,  # boolean
     )
 
     decoder_model_name = "decoder_" + args.model_name

@@ -147,6 +147,8 @@ pickle_map_lv["training_data"] = training_data
 pickle_map_lv["validation_data"] = validation_data
 pickle_map_lv["test_data"] = test_data
 
+with open("./pickle_map_lv", "wb") as handle:
+    pickle.dump(pickle_map_lv, handle, protocol=2)
 
 if __name__ == "__main__":
     pass
