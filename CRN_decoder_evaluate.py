@@ -216,7 +216,7 @@ def test_CRN_decoder(pickle_map, max_projection_horizon, projection_horizon, mod
     training_br_states = encoder_model.get_balancing_reps(training_processed)
     validation_br_states = encoder_model.get_balancing_reps(validation_processed)
 
-    training_seq_processed = process_seq_data(training_processed, training_br_states, max_projection_horizon)
+    training_seq_processed = process_seq_data(training_processed, training_br_states, max_projection_horizon)   # br means balancing representation
     validation_seq_processed = process_seq_data(validation_processed, validation_br_states, max_projection_horizon)
 
     fit_CRN_decoder(dataset_train=training_seq_processed, dataset_val=validation_seq_processed,

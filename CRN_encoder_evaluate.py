@@ -7,7 +7,6 @@ from CRN_model import CRN_Model
 from utils.evaluation_utils import write_results_to_file, load_trained_model, get_processed_data
 
 
-
 def fit_CRN_encoder(dataset_train, dataset_val, model_name, model_dir, hyperparams_file,
                     b_hyperparam_opt):
     _, length, num_covariates = dataset_train['current_covariates'].shape

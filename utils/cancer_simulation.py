@@ -844,7 +844,7 @@ def get_cancer_sim_data(chemo_coeff, radio_coeff, b_load, b_save=False, seed=100
         params = get_confounding_params(int(num_patients / 10), chemo_coeff=chemo_coeff,
                                             radio_coeff=radio_coeff)
         params['window_size'] = window_size
-        test_data_factuals = simulate(params, num_time_steps)
+        test_data_factuals = simulate(params, num_time_steps) # they have same structure with other data.
         test_data_counterfactuals = simulate_counterfactual_test_data(params, num_time_steps)
 
         params = get_confounding_params(int(num_patients / 10), chemo_coeff=chemo_coeff,
