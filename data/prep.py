@@ -45,30 +45,27 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
     subset = subset.reset_index()
     subset_len = int(len(subset))
     print(gvkey_idx)
-    sequence_lengths[gvkey_idx] = subset_len - 1
-    if subset_len < 2:
-        continue
-    else:
-        for index, row in subset.iterrows():
-            if index < subset_len - 1:
-                ts = int((row["qtr"] - min_qtr) * 4)
-                # y; assing t+1
-                niq_adj_vol[gvkey_idx, ts + 1] = subset.loc[index + 1, "niq_adj_vol"]
-                # v
-                naics[gvkey_idx] = int(row["naics"])
-                # x
-                atq_adj[gvkey_idx, ts] = row["atq_adj"]
-                niq_adj[gvkey_idx, ts] = row["niq_adj"]
-                revtq_adj[gvkey_idx, ts] = row["revtq_adj"]
-                emp[gvkey_idx, ts] = row["emp"]
-                mkvaltq_adj[gvkey_idx, ts] = row["mkvaltq_adj"]
-                PRisk[gvkey_idx, ts] = row["PRisk"]
-                timecode[gvkey_idx, ts] = row["qtr"]
-                # a
-                amount[gvkey_idx, ts] = row["amount"]
-                if amount[gvkey_idx, ts] > 0:
-                    amount_bool[gvkey_idx, ts] = 1
-                pass
+    sequence_lengths[gvkey_idx] = subset_len  # this is used for finding active values.
+    for index, row in subset.iterrows():
+        ts = int((row["qtr"] - min_qtr) * 4)
+        # y
+        niq_adj_vol[gvkey_idx, ts] = row["niq_adj_vol"]
+        # niq_adj_vol[gvkey_idx, ts + 1] = subset.loc[index + 1, "niq_adj_vol"]
+        # v
+        naics[gvkey_idx] = int(row["naics"])
+        # x
+        atq_adj[gvkey_idx, ts] = row["atq_adj"]
+        niq_adj[gvkey_idx, ts] = row["niq_adj"]
+        revtq_adj[gvkey_idx, ts] = row["revtq_adj"]
+        emp[gvkey_idx, ts] = row["emp"]
+        mkvaltq_adj[gvkey_idx, ts] = row["mkvaltq_adj"]
+        PRisk[gvkey_idx, ts] = row["PRisk"]
+        timecode[gvkey_idx, ts] = row["qtr"]
+        # a
+        amount[gvkey_idx, ts] = row["amount"]
+        if amount[gvkey_idx, ts] > 0:
+            amount_bool[gvkey_idx, ts] = 1
+        pass
 
 random.seed(17800)
 random.shuffle(gvkeys)
@@ -140,8 +137,6 @@ test_data["timecode"] = timecode[mask, :]
 test_data["sequence_lengths"] = sequence_lengths[mask]
 test_data["amount"] = amount[mask, :]
 test_data["amount_bool"] = amount_bool[mask, :]
-
-pass
 
 pickle_map_lv["training_data"] = training_data
 pickle_map_lv["validation_data"] = validation_data
