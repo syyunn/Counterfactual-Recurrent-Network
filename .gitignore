@@ -2,3 +2,4 @@
 __pycache__
 *.pkl
 results
+.DS_Store

@@ -54,7 +54,7 @@ def get_processed_data(raw_sim_data, scaling_params):
     horizon = 1  # for the encoder, we perform "one-step ahead prediction"
     offset = 1  # to do one-step ahead, remove the final one
 
-    mean["chemo_application"] = 0  # application = treatment
+    mean["amount_bool"] = 0  # application = treatment
     mean["radio_application"] = 0
     std["chemo_application"] = 1
     std["radio_application"] = 1

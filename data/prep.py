@@ -5,7 +5,7 @@ import random
 
 pickle_map_lv = dict()
 
-pickle_map = pickle.load(open("../results/new_cancer_sim_2_2.p", "rb"))
+pickle_map = pickle.load(open("../results/new_cancer_sim_2_2.p", "rb")) # original data used for cancer simul
 
 lv = pd.read_csv("./lv.csv")
 
@@ -141,6 +141,39 @@ test_data["amount_bool"] = amount_bool[mask, :]
 pickle_map_lv["training_data"] = training_data
 pickle_map_lv["validation_data"] = validation_data
 pickle_map_lv["test_data"] = test_data
+
+
+# scaling_data
+
+def get_scaling_params(training_data):
+    real_idx = ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "amount"]
+
+    # df = pd.DataFrame({k: sim[k] for k in real_idx})
+    means = {}
+    stds = {}
+    seq_lengths = training_data["sequence_lengths"]
+    for k in real_idx:
+        active_values = []
+        for i in range(seq_lengths.shape[0]):
+            end = int(seq_lengths[i])
+            active_values += list(training_data[k][i, :end])
+
+        means[k] = np.mean(active_values)
+        stds[k] = np.std(active_values)
+
+    # Add means for static variables`
+    means["naics"] = np.mean(training_data["naics"])
+    stds["naics"] = np.std(training_data["naics"])
+
+    means["amount_bool"] = np.mean(training_data["amount_bool"])
+    stds["amount_bool"] = np.std(training_data["amount_bool"])
+
+
+    return pd.Series(means), pd.Series(stds)
+
+scaling_data = get_scaling_params(pickle_map_lv['training_data'])
+
+pickle_map_lv['scaling_data'] = scaling_data
 
 with open("./pickle_map_lv", "wb") as handle:
     pickle.dump(pickle_map_lv, handle, protocol=2)

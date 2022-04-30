@@ -4,7 +4,7 @@ import logging
 import numpy as np
 
 from CRN_model import CRN_Model
-from utils.evaluation_utils import (
+from utils.evaluation_utils_lv import (
     write_results_to_file,
     load_trained_model,
     get_processed_data,
@@ -32,14 +32,14 @@ def fit_CRN_encoder(
         "num_covariates": num_covariates,
         "num_outputs": num_outputs,
         "max_sequence_length": length,
-        "num_epochs": 100,
+        "num_epochs": 500,
     }
 
     hyperparams = dict()
-    num_simulations = 50
+    num_simulations = 50  # number of interation to find best hyperparameter
     best_validation_mse = 1000000
 
-    if b_hyperparam_opt:
+    if b_hyperparam_opt: # default is False; not doing.
         logging.info("Performing hyperparameter optimization")
         for simulation in range(num_simulations):
             logging.info(
@@ -79,12 +79,20 @@ def fit_CRN_encoder(
 
         write_results_to_file(hyperparams_file, best_hyperparams)
 
-    else:
+    else: # deafault
         logging.info("Using default hyperparameters")
+        # best_hyperparams = {
+        #     "rnn_hidden_units": 24,
+        #     "br_size": 12,
+        #     "fc_hidden_units": 36,
+        #     "learning_rate": 0.01,
+        #     "batch_size": 128,
+        #     "rnn_keep_prob": 0.9,
+        # }
         best_hyperparams = {
-            "rnn_hidden_units": 24,
-            "br_size": 12,
-            "fc_hidden_units": 36,
+            "rnn_hidden_units": 36,
+            "br_size": 36,
+            "fc_hidden_units": 36*4,
             "learning_rate": 0.01,
             "batch_size": 128,
             "rnn_keep_prob": 0.9,

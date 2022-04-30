@@ -15,7 +15,7 @@ def init_arg():
     # parser.add_argument("--chemo_coeff", default=2, type=int)
     # parser.add_argument("--radio_coeff", default=2, type=int)
     parser.add_argument("--results_dir", default="results")
-    parser.add_argument("--model_name", default="crn_test_2")
+    parser.add_argument("--model_name", default="crn_test_lv_1")
     parser.add_argument("--b_encoder_hyperparm_tuning", default=False)
     parser.add_argument("--b_decoder_hyperparm_tuning", default=False)
     return parser.parse_args()
@@ -47,13 +47,13 @@ if __name__ == "__main__":
     if not os.path.exists(models_dir):
         os.mkdir(models_dir)
 
-    rmse_encoder = test_CRN_encoder(
-        pickle_map=pickle_map,
-        models_dir=models_dir,
-        encoder_model_name=encoder_model_name,
-        encoder_hyperparams_file=encoder_hyperparams_file,  # model name
-        b_encoder_hyperparm_tuning=args.b_encoder_hyperparm_tuning,  # boolean
-    )
+    # rmse_encoder = test_CRN_encoder(
+    #     pickle_map=pickle_map,
+    #     models_dir=models_dir,
+    #     encoder_model_name=encoder_model_name,
+    #     encoder_hyperparams_file=encoder_hyperparams_file,  # model name
+    #     b_encoder_hyperparm_tuning=args.b_encoder_hyperparm_tuning,  # boolean
+    # )
 
     decoder_model_name = "decoder_" + args.model_name
     decoder_hyperparams_file = "{}/{}_best_hyperparams.txt".format(
@@ -62,8 +62,7 @@ if __name__ == "__main__":
 
     """
     The counterfactual test data for a sequence of treatments in the future was simulated for a 
-    projection horizon of 5 timesteps. 
-   
+    projection horizon of 5 timesteps.    
     """
 
     max_projection_horizon = 5

@@ -54,91 +54,108 @@ def get_processed_data(raw_sim_data, scaling_params):
     horizon = 1  # for the encoder, we perform "one-step ahead prediction"
     offset = 1  # to do one-step ahead, remove the final one
 
-    mean["chemo_application"] = 0  # application = treatment
-    mean["radio_application"] = 0
-    std["chemo_application"] = 1
-    std["radio_application"] = 1
-
+    # ["cancer_volume", "patient_types", "chemo_application", "radio_application"]
     input_means = mean[
-        ["cancer_volume", "patient_types", "chemo_application", "radio_application"]
+        ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "naics", "amount_bool"]
     ].values.flatten()
-    # v is the patient_type
-    # y is cancer_volume
-    # a is applicatioin
-    # x is
+
     input_stds = std[
-        ["cancer_volume", "patient_types", "chemo_application", "radio_application"]
+        ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "naics", "amount_bool"]
     ].values.flatten()
 
     # Continuous values
-    cancer_volume = (raw_sim_data["cancer_volume"] - mean["cancer_volume"]) / std[
-        "cancer_volume"
-    ]
-    patient_types = (raw_sim_data["patient_types"] - mean["patient_types"]) / std[
-        "patient_types"
+    niq_adj_vol = (raw_sim_data["niq_adj_vol"] - mean["niq_adj_vol"]) / std[
+        "niq_adj_vol"
     ]
 
-    patient_types = np.stack(
-        [patient_types for t in range(cancer_volume.shape[1])], axis=1
+    atq_adj = (raw_sim_data["atq_adj"] - mean["atq_adj"]) / std[
+        "atq_adj"
+    ]
+
+    niq_adj = (raw_sim_data["niq_adj"] - mean["niq_adj"]) / std[
+        "niq_adj"
+    ]
+
+    revtq_adj = (raw_sim_data["revtq_adj"] - mean["revtq_adj"]) / std[
+        "revtq_adj"
+    ]
+
+    mkvaltq_adj = (raw_sim_data["mkvaltq_adj"] - mean["mkvaltq_adj"]) / std[
+        "mkvaltq_adj"
+    ]
+
+    emp = (raw_sim_data["emp"] - mean["emp"]) / std[
+        "emp"
+    ]
+
+    PRisk = (raw_sim_data["PRisk"] - mean["PRisk"]) / std[
+        "PRisk"
+    ]
+
+    timecode = (raw_sim_data["timecode"] - mean["timecode"]) / std[
+        "timecode"
+    ]
+
+    # Static values
+    naics = (raw_sim_data["naics"] - mean["naics"]) / std[
+        "naics"
+    ]
+
+    naics = np.stack(
+        [naics for t in range(niq_adj_vol.shape[1])], axis=1
     )
 
     # Binary application
-    chemo_application = raw_sim_data["chemo_application"]
-    radio_application = raw_sim_data["radio_application"]
+    amount_bool = raw_sim_data["amount_bool"]
     sequence_lengths = raw_sim_data["sequence_lengths"]
 
     # Convert treatments to one-hot encoding
-
     treatments = np.concatenate(
         [
-            chemo_application[:, :-offset, np.newaxis],
-            radio_application[:, :-offset, np.newaxis],
+            amount_bool[:, :-offset, np.newaxis],  # transpose.
         ],
         axis=-1,
     )
 
     one_hot_treatments = np.zeros(
-        shape=(treatments.shape[0], treatments.shape[1], 4)
+        shape=(treatments.shape[0], treatments.shape[1], 1)
     )  # this 4 means dimension of one-hot vector.
+
     for patient_id in range(treatments.shape[0]):
         for timestep in range(treatments.shape[1]):
             if (
                 treatments[patient_id][timestep][0] == 0
-                and treatments[patient_id][timestep][1] == 0
             ):
-                one_hot_treatments[patient_id][timestep] = [1, 0, 0, 0]
+                one_hot_treatments[patient_id][timestep] = [0]
             elif (
                 treatments[patient_id][timestep][0] == 1
-                and treatments[patient_id][timestep][1] == 0
             ):
-                one_hot_treatments[patient_id][timestep] = [0, 1, 0, 0]
-            elif (
-                treatments[patient_id][timestep][0] == 0
-                and treatments[patient_id][timestep][1] == 1
-            ):
-                one_hot_treatments[patient_id][timestep] = [0, 0, 1, 0]
-            elif (
-                treatments[patient_id][timestep][0] == 1
-                and treatments[patient_id][timestep][1] == 1
-            ):
-                one_hot_treatments[patient_id][timestep] = [0, 0, 0, 1]
+                one_hot_treatments[patient_id][timestep] = [1]
 
     one_hot_previous_treatments = one_hot_treatments[:, :-1, :]
 
     # covariates are only volume and type (two) in this case
+
     current_covariates = np.concatenate(
         [
-            cancer_volume[:, :-offset, np.newaxis],
-            patient_types[:, :-offset, np.newaxis],
+            niq_adj_vol[:, :-offset, np.newaxis],
+            atq_adj[:, :-offset, np.newaxis],
+            niq_adj[:, :-offset, np.newaxis],
+            revtq_adj[:, :-offset, np.newaxis],
+            mkvaltq_adj[:, :-offset, np.newaxis],
+            emp[:, :-offset, np.newaxis],
+            PRisk[:, :-offset, np.newaxis],
+            timecode[:, :-offset, np.newaxis],
+            naics[:, :-offset, np.newaxis],
         ],
         axis=-1,
     )
-    outputs = cancer_volume[:, horizon:, np.newaxis]  # volume is y in this case.
+    outputs = niq_adj_vol[:, horizon:, np.newaxis]  # volume is y in this case.
 
-    output_means = mean[["cancer_volume"]].values.flatten()[
+    output_means = mean[["niq_adj_vol"]].values.flatten()[
         0
     ]  # because we only need scalars here
-    output_stds = std[["cancer_volume"]].values.flatten()[0]
+    output_stds = std[["niq_adj_vol"]].values.flatten()[0]
 
     print(outputs.shape)
 
@@ -158,7 +175,7 @@ def get_processed_data(raw_sim_data, scaling_params):
     raw_sim_data["active_entries"] = active_entries
 
     raw_sim_data["unscaled_outputs"] = (
-        outputs * std["cancer_volume"] + mean["cancer_volume"]
+        outputs * std["niq_adj_vol"] + mean["niq_adj_vol"]
     )
     raw_sim_data["input_means"] = input_means
     raw_sim_data["inputs_stds"] = input_stds
