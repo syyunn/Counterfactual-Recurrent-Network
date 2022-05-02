@@ -4,7 +4,7 @@ import logging
 import numpy as np
 
 from CRN_model import CRN_Model
-from utils.evaluation_utils_lv import (
+from utils.evaluation_utils import (
     write_results_to_file,
     load_trained_model,
     get_processed_data,
@@ -121,14 +121,14 @@ def test_CRN_encoder(
     validation_processed = get_processed_data(validation_data, scaling_data)
     test_processed = get_processed_data(test_data, scaling_data)
 
-    # fit_CRN_encoder(
-    #     dataset_train=training_processed,
-    #     dataset_val=validation_processed,
-    #     model_name=encoder_model_name,
-    #     model_dir=models_dir,
-    #     hyperparams_file=encoder_hyperparams_file,
-    #     b_hyperparam_opt=b_encoder_hyperparm_tuning,
-    # )
+    fit_CRN_encoder(
+        dataset_train=training_processed,
+        dataset_val=validation_processed,
+        model_name=encoder_model_name,
+        model_dir=models_dir,
+        hyperparams_file=encoder_hyperparams_file,
+        b_hyperparam_opt=b_encoder_hyperparm_tuning,
+    )
 
     CRN_encoder = load_trained_model(
         validation_processed, encoder_hyperparams_file, encoder_model_name, models_dir

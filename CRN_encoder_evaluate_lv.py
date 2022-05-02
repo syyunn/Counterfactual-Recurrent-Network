@@ -33,6 +33,7 @@ def fit_CRN_encoder(
         "num_outputs": num_outputs,
         "max_sequence_length": length,
         "num_epochs": 100,
+        "num_epochs": 500,
     }
 
     hyperparams = dict()
@@ -113,14 +114,14 @@ def test_CRN_encoder(
     validation_processed = get_processed_data(validation_data, scaling_data)
     test_processed = get_processed_data(test_data, scaling_data)
 
-    # fit_CRN_encoder(
-    #     dataset_train=training_processed,
-    #     dataset_val=validation_processed,
-    #     model_name=encoder_model_name,
-    #     model_dir=models_dir,
-    #     hyperparams_file=encoder_hyperparams_file,
-    #     b_hyperparam_opt=b_encoder_hyperparm_tuning,
-    # )
+    fit_CRN_encoder(
+        dataset_train=training_processed,
+        dataset_val=validation_processed,
+        model_name=encoder_model_name,
+        model_dir=models_dir,
+        hyperparams_file=encoder_hyperparams_file,
+        b_hyperparam_opt=b_encoder_hyperparm_tuning,
+    )
 
     CRN_encoder = load_trained_model(
         validation_processed, encoder_hyperparams_file, encoder_model_name, models_dir

@@ -153,9 +153,13 @@ def process_seq_data(data_map, states, projection_horizon):
 
             max_projection = min(projection_horizon, sequence_length - t)
 
+            # seq2seq_active_entries[
+            #     total_seq2seq_rows, :max_projection, :
+            # ] = active_entries[i, t : t + max_projection, :]
             seq2seq_active_entries[
                 total_seq2seq_rows, :max_projection, :
-            ] = active_entries[i, t : t + max_projection, :]
+            ] = active_entries[i, t : t + max_projection, :, 0]
+
             seq2seq_previous_treatments[
                 total_seq2seq_rows, :max_projection, :
             ] = previous_treatments[i, t - 1 : t + max_projection - 1, :]
@@ -287,6 +291,13 @@ def test_CRN_decoder(
         validation_processed, encoder_hyperparams_file, encoder_model_name, models_dir
     )
     training_br_states = encoder_model.get_balancing_reps(training_processed)
+
+    with open('./plot/training_br_states.pickle', "wb") as handle:
+        pickle.dump(training_br_states, handle, protocol=2)
+
+    with open('./plot/training_processed.pickle', "wb") as handle:
+        pickle.dump(training_processed, handle, protocol=2)
+
     validation_br_states = encoder_model.get_balancing_reps(validation_processed)
 
     training_seq_processed = process_seq_data(
@@ -296,15 +307,15 @@ def test_CRN_decoder(
         validation_processed, validation_br_states, max_projection_horizon
     )
 
-    # fit_CRN_decoder(
-    #     dataset_train=training_seq_processed,
-    #     dataset_val=validation_seq_processed,
-    #     model_dir=models_dir,
-    #     model_name=decoder_model_name,
-    #     encoder_hyperparams_file=encoder_hyperparams_file,
-    #     decoder_hyperparams_file=decoder_hyperparams_file,
-    #     b_hyperparam_opt=b_decoder_hyperparm_tuning,
-    # )
+    fit_CRN_decoder(
+        dataset_train=training_seq_processed,
+        dataset_val=validation_seq_processed,
+        model_dir=models_dir,
+        model_name=decoder_model_name,
+        encoder_hyperparams_file=encoder_hyperparams_file,
+        decoder_hyperparams_file=decoder_hyperparams_file,
+        b_hyperparam_opt=b_decoder_hyperparm_tuning,
+    )
 
     # test_data_seq_actions = pickle_map["test_data_seq"]
     test_data = pickle_map["test_data"]

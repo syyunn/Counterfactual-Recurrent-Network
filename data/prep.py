@@ -5,7 +5,7 @@ import random
 
 pickle_map_lv = dict()
 
-pickle_map = pickle.load(open("../results/new_cancer_sim_2_2.p", "rb")) # original data used for cancer simul
+pickle_map = pickle.load(open("../results/new_cancer_sim_2_2.p", "rb"))  # original data used for cancer simul
 
 lv = pd.read_csv("./lv.csv")
 
@@ -30,11 +30,14 @@ revtq_adj = np.zeros((num_gvkeys, num_time_steps))
 emp = np.zeros((num_gvkeys, num_time_steps))
 mkvaltq_adj = np.zeros((num_gvkeys, num_time_steps))
 PRisk = np.zeros((num_gvkeys, num_time_steps))
-timecode = np.zeros((num_gvkeys, num_time_steps))
-
+# timecode = np.zeros((num_gvkeys, num_time_steps))
+timecode = np.arange(min(lv["qtr"]), max(lv["qtr"])+0.25, 0.25)
+timecode = np.tile(timecode, (num_gvkeys, 1))
 # v
-sequence_lengths = np.zeros((num_gvkeys,))
 naics = np.zeros((num_gvkeys,))
+# meta
+sequence_lengths = np.zeros((num_gvkeys,))
+active_entries = np.zeros((num_gvkeys, num_time_steps))
 
 min_qtr = min(lv["qtr"])
 
@@ -45,7 +48,10 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
     subset = subset.reset_index()
     subset_len = int(len(subset))
     print(gvkey_idx)
+
+    # meta
     sequence_lengths[gvkey_idx] = subset_len  # this is used for finding active values.
+
     for index, row in subset.iterrows():
         ts = int((row["qtr"] - min_qtr) * 4)
         # y
@@ -60,12 +66,14 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
         emp[gvkey_idx, ts] = row["emp"]
         mkvaltq_adj[gvkey_idx, ts] = row["mkvaltq_adj"]
         PRisk[gvkey_idx, ts] = row["PRisk"]
-        timecode[gvkey_idx, ts] = row["qtr"]
+        # timecode[gvkey_idx, ts] = row["qtr"]
         # a
         amount[gvkey_idx, ts] = row["amount"]
         if amount[gvkey_idx, ts] > 0:
             amount_bool[gvkey_idx, ts] = 1
         pass
+        #meta
+        active_entries[gvkey_idx, ts] = 1
 
 random.seed(17800)
 random.shuffle(gvkeys)
@@ -99,6 +107,9 @@ training_data["timecode"] = timecode[mask, :]
 training_data["sequence_lengths"] = sequence_lengths[mask]
 training_data["amount"] = amount[mask, :]
 training_data["amount_bool"] = amount_bool[mask, :]
+# meta
+training_data["active_entries"] = active_entries[mask, :]
+
 
 # --- validation data
 mask = [rev_dict[gvkey] for gvkey in valid_gvkeys]
@@ -118,6 +129,8 @@ validation_data["timecode"] = timecode[mask, :]
 validation_data["sequence_lengths"] = sequence_lengths[mask]
 validation_data["amount"] = amount[mask, :]
 validation_data["amount_bool"] = amount_bool[mask, :]
+# meta
+validation_data["active_entries"] = active_entries[mask, :]
 
 # --- test data
 mask = [rev_dict[gvkey] for gvkey in test_gvkeys]
@@ -137,14 +150,15 @@ test_data["timecode"] = timecode[mask, :]
 test_data["sequence_lengths"] = sequence_lengths[mask]
 test_data["amount"] = amount[mask, :]
 test_data["amount_bool"] = amount_bool[mask, :]
+# meta
+test_data["active_entries"] = active_entries[mask, :]
 
+# packing all three datasets
 pickle_map_lv["training_data"] = training_data
 pickle_map_lv["validation_data"] = validation_data
 pickle_map_lv["test_data"] = test_data
 
-
 # scaling_data
-
 def get_scaling_params(training_data):
     real_idx = ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "amount"]
 

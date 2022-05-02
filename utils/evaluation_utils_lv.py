@@ -57,11 +57,11 @@ def get_processed_data(raw_sim_data, scaling_params):
     # ["cancer_volume", "patient_types", "chemo_application", "radio_application"]
     input_means = mean[
         ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "naics", "amount_bool"]
-    ].values.flatten()
+    ].values.flatten()  # with time code, you can perfectly predict treatment
 
     input_stds = std[
         ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "naics", "amount_bool"]
-    ].values.flatten()
+    ].values.flatten()  # with time code, you can perfectly predict treatment
 
     # Continuous values
     niq_adj_vol = (raw_sim_data["niq_adj_vol"] - mean["niq_adj_vol"]) / std[
@@ -134,6 +134,10 @@ def get_processed_data(raw_sim_data, scaling_params):
 
     one_hot_previous_treatments = one_hot_treatments[:, :-1, :]
 
+    # one_hot_treatments[np.isnan(one_hot_treatments)] = 0 # just make sure
+
+    # one_hot_previous_treatments = one_hot_treatments[:, 1:, :]
+
     # covariates are only volume and type (two) in this case
 
     current_covariates = np.concatenate(
@@ -145,7 +149,7 @@ def get_processed_data(raw_sim_data, scaling_params):
             mkvaltq_adj[:, :-offset, np.newaxis],
             emp[:, :-offset, np.newaxis],
             PRisk[:, :-offset, np.newaxis],
-            timecode[:, :-offset, np.newaxis],
+            # timecode[:, :-offset, np.newaxis],
             naics[:, :-offset, np.newaxis],
         ],
         axis=-1,
@@ -159,14 +163,17 @@ def get_processed_data(raw_sim_data, scaling_params):
 
     print(outputs.shape)
 
-    # Add active entries
-    active_entries = np.zeros(outputs.shape)
+    # let's make this from prep.py
+    active_entries = raw_sim_data["active_entries"]
+    active_entries = active_entries[:, horizon:, np.newaxis]  # adjust as same as output - because we use this for loss computation, which copares with output.
 
-    for i in range(sequence_lengths.shape[0]):  # number of different patient ids
-        sequence_length = int(sequence_lengths[i])
-        active_entries[
-            i, :sequence_length, :
-        ] = 1  # in this way, we manage the varying length of each patients.
+    # Add active entries
+    # active_entries = np.zeros(outputs.shape)
+    # for i in range(sequence_lengths.shape[0]):  # number of different patient ids
+    #     sequence_length = int(sequence_lengths[i])
+    #     active_entries[
+    #         i, :sequence_length, :
+    #     ] = 1  # in this way, we manage the varying length of each patients.
 
     raw_sim_data["current_covariates"] = current_covariates
     raw_sim_data["previous_treatments"] = one_hot_previous_treatments
@@ -183,7 +190,6 @@ def get_processed_data(raw_sim_data, scaling_params):
     raw_sim_data["output_stds"] = output_stds
 
     return raw_sim_data
-
 
 def get_mse_at_follow_up_time(mean, output, active_entires):
     mses = np.sum(
