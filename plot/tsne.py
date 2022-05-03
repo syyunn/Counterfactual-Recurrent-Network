@@ -20,6 +20,8 @@ for t in range(1, 66):
     print(t)
     brs = training_br_states[:,t,:]
     treatments = training_processed['current_treatments'][:,t,:]
+    # treatments[treatments > 0] = 1
+    # treatments[treatments <= 0] = 0
     cvrs = training_processed['current_covariates'][:,t,:]
 
     tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
@@ -40,9 +42,10 @@ for t in range(1, 66):
     sns.scatterplot(
         x="tsne-2d-one-br", y="tsne-2d-two-br",
         hue="treatment",
-        palette=sns.color_palette("hls", 2),
+        # palette=sns.color_palette("hls", 2),
+        palette='seismic',
         data=df,
-        legend="full",
+        # legend="full",
         alpha=0.3,
         ax=ax[1]
     )
@@ -50,9 +53,10 @@ for t in range(1, 66):
     sns.scatterplot(
         x="tsne-2d-one-cvrs", y="tsne-2d-two-cvrs",
         hue="treatment",
-        palette=sns.color_palette("hls", 2),
+        # palette=sns.color_palette("hls", 2),
+        palette='seismic',
         data=df,
-        legend="full",
+        # legend="full",
         alpha=0.3,
         ax=ax[0]
     )

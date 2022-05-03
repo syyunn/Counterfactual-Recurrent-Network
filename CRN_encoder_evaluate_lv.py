@@ -32,7 +32,7 @@ def fit_CRN_encoder(
         "num_covariates": num_covariates,
         "num_outputs": num_outputs,
         "max_sequence_length": length,
-        "num_epochs": 100,
+        # "num_epochs": 100,
         "num_epochs": 500,
     }
 

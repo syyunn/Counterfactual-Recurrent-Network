@@ -35,7 +35,8 @@ if __name__ == "__main__":
     #                                  b_load=True,
     #                                  b_save=True,
     #                                  model_root=args.results_dir)
-    with open("./data/pickle_map_lv", "rb") as handle:
+
+    with open("./data/pickle_map_lv_all_zeros", "rb") as handle:
         pickle_map = pickle.load(handle)
 
     encoder_model_name = "encoder_" + args.model_name
@@ -47,13 +48,13 @@ if __name__ == "__main__":
     if not os.path.exists(models_dir):
         os.mkdir(models_dir)
 
-    rmse_encoder = test_CRN_encoder(
-        pickle_map=pickle_map,
-        models_dir=models_dir,
-        encoder_model_name=encoder_model_name,
-        encoder_hyperparams_file=encoder_hyperparams_file,  # model name
-        b_encoder_hyperparm_tuning=args.b_encoder_hyperparm_tuning,  # boolean
-    )
+    # rmse_encoder = test_CRN_encoder(
+    #     pickle_map=pickle_map,
+    #     models_dir=models_dir,
+    #     encoder_model_name=encoder_model_name,
+    #     encoder_hyperparams_file=encoder_hyperparams_file,  # model name
+    #     b_encoder_hyperparm_tuning=args.b_encoder_hyperparm_tuning,  # boolean
+    # )
 
     decoder_model_name = "decoder_" + args.model_name
     decoder_hyperparams_file = "{}/{}_best_hyperparams.txt".format(
@@ -65,8 +66,8 @@ if __name__ == "__main__":
     projection horizon of 5 timesteps.    
     """
 
-    # max_projection_horizon = 5
-    # projection_horizon = 5
+    # max_projection_horizon = 10
+    # projection_horizon = 10
 
     max_projection_horizon = 2
     projection_horizon = 2
@@ -90,4 +91,4 @@ if __name__ == "__main__":
     print(rmse_encoder)
 
     print(f"Results for {max_projection_horizon}-step-ahead prediction.")
-    print(rmse_decoder)
+    # print(rmse_decoder)

@@ -56,11 +56,11 @@ def get_processed_data(raw_sim_data, scaling_params):
 
     # ["cancer_volume", "patient_types", "chemo_application", "radio_application"]
     input_means = mean[
-        ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "naics", "amount_bool"]
+        ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "naics", "amount_bool", "amount"]
     ].values.flatten()  # with time code, you can perfectly predict treatment
 
     input_stds = std[
-        ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "naics", "amount_bool"]
+        ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "naics", "amount_bool", "amount"]
     ].values.flatten()  # with time code, you can perfectly predict treatment
 
     # Continuous values
@@ -96,6 +96,10 @@ def get_processed_data(raw_sim_data, scaling_params):
         "timecode"
     ]
 
+    amount = (raw_sim_data["amount"] - mean["amount"]) / std[
+        "amount"
+    ]
+
     # Static values
     naics = (raw_sim_data["naics"] - mean["naics"]) / std[
         "naics"
@@ -106,13 +110,20 @@ def get_processed_data(raw_sim_data, scaling_params):
     )
 
     # Binary application
-    amount_bool = raw_sim_data["amount_bool"]
+    # amount_bool = raw_sim_data["amount_bool"]
     sequence_lengths = raw_sim_data["sequence_lengths"]
 
     # Convert treatments to one-hot encoding
+    # treatments = np.concatenate(
+    #     [
+    #         amount_bool[:, :-offset, np.newaxis],  # transpose.
+    #     ],
+    #     axis=-1,
+    # )
+
     treatments = np.concatenate(
         [
-            amount_bool[:, :-offset, np.newaxis],  # transpose.
+            amount[:, :-offset, np.newaxis],  # transpose.
         ],
         axis=-1,
     )
@@ -121,16 +132,20 @@ def get_processed_data(raw_sim_data, scaling_params):
         shape=(treatments.shape[0], treatments.shape[1], 1)
     )  # this 4 means dimension of one-hot vector.
 
+    # for patient_id in range(treatments.shape[0]):
+    #     for timestep in range(treatments.shape[1]):
+    #         if (
+    #             treatments[patient_id][timestep][0] == 0
+    #         ):
+    #             one_hot_treatments[patient_id][timestep] = [0]
+    #         elif (
+    #             treatments[patient_id][timestep][0] == 1
+    #         ):
+    #             one_hot_treatments[patient_id][timestep] = [1]
+
     for patient_id in range(treatments.shape[0]):
         for timestep in range(treatments.shape[1]):
-            if (
-                treatments[patient_id][timestep][0] == 0
-            ):
-                one_hot_treatments[patient_id][timestep] = [0]
-            elif (
-                treatments[patient_id][timestep][0] == 1
-            ):
-                one_hot_treatments[patient_id][timestep] = [1]
+            one_hot_treatments[patient_id][timestep] = [treatments[patient_id][timestep][0]]
 
     one_hot_previous_treatments = one_hot_treatments[:, :-1, :]
 
@@ -149,7 +164,7 @@ def get_processed_data(raw_sim_data, scaling_params):
             mkvaltq_adj[:, :-offset, np.newaxis],
             emp[:, :-offset, np.newaxis],
             PRisk[:, :-offset, np.newaxis],
-            # timecode[:, :-offset, np.newaxis],
+            timecode[:, :-offset, np.newaxis],
             naics[:, :-offset, np.newaxis],
         ],
         axis=-1,
@@ -190,6 +205,7 @@ def get_processed_data(raw_sim_data, scaling_params):
     raw_sim_data["output_stds"] = output_stds
 
     return raw_sim_data
+
 
 def get_mse_at_follow_up_time(mean, output, active_entires):
     mses = np.sum(

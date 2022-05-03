@@ -69,9 +69,9 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
         # timecode[gvkey_idx, ts] = row["qtr"]
         # a
         amount[gvkey_idx, ts] = row["amount"]
-        if amount[gvkey_idx, ts] > 0:
-            amount_bool[gvkey_idx, ts] = 1
-        pass
+        # if amount[gvkey_idx, ts] > 0:
+        #     amount_bool[gvkey_idx, ts] = 1
+        # pass
         #meta
         active_entries[gvkey_idx, ts] = 1
 
@@ -160,7 +160,8 @@ pickle_map_lv["test_data"] = test_data
 
 # scaling_data
 def get_scaling_params(training_data):
-    real_idx = ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "amount"]
+
+    real_idx = ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "amount_bool", "amount"]
 
     # df = pd.DataFrame({k: sim[k] for k in real_idx})
     means = {}
@@ -189,7 +190,7 @@ scaling_data = get_scaling_params(pickle_map_lv['training_data'])
 
 pickle_map_lv['scaling_data'] = scaling_data
 
-with open("./pickle_map_lv", "wb") as handle:
+with open("./pickle_map_lv_amount", "wb") as handle:
     pickle.dump(pickle_map_lv, handle, protocol=2)
 
 if __name__ == "__main__":

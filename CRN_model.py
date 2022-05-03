@@ -1,5 +1,7 @@
 # Copyright (c) 2020, Ioana Bica
 
+import pickle
+
 import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell, DropoutWrapper
 from tensorflow.python.ops import rnn
@@ -99,9 +101,9 @@ class CRN_Model:
         treatment_logit_predictions = tf.layers.dense(
             treatments_network_layer, self.num_treatments, activation=None
         )
-        treatment_prob_predictions = tf.nn.softmax(treatment_logit_predictions)
-
-        return treatment_prob_predictions
+        # treatment_prob_predictions = tf.nn.softmax(treatment_logit_predictions)
+        # return treatment_prob_predictions
+        return treatment_logit_predictions
 
     def build_outcomes(
         self,
@@ -590,12 +592,18 @@ class CRN_Model:
         for t in range(0, projection_horizon):
             print(t)
             predictions = self.get_predictions(current_dataset)
+
+            with open('./all_zeros_ones/all_zeros.pickle', "wb") as handle:
+                pickle.dump(predictions, handle, protocol=2)
+
             for i in range(num_patient_points):
                 predicted_outputs[i, t] = predictions[i, t]
                 if t < projection_horizon - 1:
                     current_dataset["current_covariates"][i, t + 1, 0] = predictions[
                         i, t, 0
                     ]
+            with open('./all_zeros_ones/all_zeros.pickle_pre', "wb") as handle:
+                pickle.dump(predictions, handle, protocol=2)
 
         test_data["predicted_outcomes"] = predicted_outputs
 
@@ -607,10 +615,16 @@ class CRN_Model:
         treatment_predictions = tf.reshape(
             treatment_predictions, [-1, self.max_sequence_length, self.num_treatments]
         )
-        cross_entropy_loss = tf.reduce_sum(
-            (-target_treatments * tf.log(treatment_predictions + 1e-8)) * active_entries
+
+        # cross_entropy_loss = tf.reduce_sum(
+        #     (-target_treatments * tf.log(treatment_predictions + 1e-8)) * active_entries
+        # ) / tf.reduce_sum(active_entries)
+
+        mse_loss = tf.reduce_sum(
+            -tf.square(target_treatments - treatment_predictions) * active_entries
         ) / tf.reduce_sum(active_entries)
-        return cross_entropy_loss
+
+        return mse_loss
 
     def compute_loss_predictions(self, outputs, predictions, active_entries):
         predictions = tf.reshape(

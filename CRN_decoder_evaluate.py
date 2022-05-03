@@ -331,6 +331,7 @@ def test_CRN_decoder(
         test_br_outputs,
         projection_horizon,
     )
+
     seq_predictions = (
         seq_predictions * test_seq_processed["output_stds"]
         + test_seq_processed["output_means"]

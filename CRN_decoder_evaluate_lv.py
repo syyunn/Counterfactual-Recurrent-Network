@@ -37,7 +37,7 @@ def fit_CRN_decoder(
         "num_covariates": num_covariates,
         "num_outputs": num_outputs,
         "max_sequence_length": length,
-        "num_epochs": 100,
+        "num_epochs": 500 # 100,
     }
 
     hyperparams = dict()
@@ -307,15 +307,15 @@ def test_CRN_decoder(
         validation_processed, validation_br_states, max_projection_horizon
     )
 
-    fit_CRN_decoder(
-        dataset_train=training_seq_processed,
-        dataset_val=validation_seq_processed,
-        model_dir=models_dir,
-        model_name=decoder_model_name,
-        encoder_hyperparams_file=encoder_hyperparams_file,
-        decoder_hyperparams_file=decoder_hyperparams_file,
-        b_hyperparam_opt=b_decoder_hyperparm_tuning,
-    )
+    # fit_CRN_decoder(
+    #     dataset_train=training_seq_processed,
+    #     dataset_val=validation_seq_processed,
+    #     model_dir=models_dir,
+    #     model_name=decoder_model_name,
+    #     encoder_hyperparams_file=encoder_hyperparams_file,
+    #     decoder_hyperparams_file=decoder_hyperparams_file,
+    #     b_hyperparam_opt=b_decoder_hyperparm_tuning,
+    # )
 
     # test_data_seq_actions = pickle_map["test_data_seq"]
     test_data = pickle_map["test_data"]
