@@ -58,6 +58,7 @@ class CRN_Model:
 
     def build_balancing_representation(self):
         self.rnn_input = tf.concat(
+            # [self.current_covariates, self.previous_treatments], axis=-1
             [self.current_covariates, self.previous_treatments], axis=-1
         )
         self.sequence_length = self.compute_sequence_length(self.rnn_input)
@@ -91,19 +92,26 @@ class CRN_Model:
         return balancing_representation
 
     def build_treatment_assignments_one_hot(self, balancing_representation):
-        balancing_representation_gr = flip_gradient(
-            balancing_representation, self.alpha
-        )
+        # balancing_representation_gr = flip_gradient(
+        #     balancing_representation, self.alpha
+        # )
+
+        # treatments_network_layer = tf.layers.dense(
+        #     balancing_representation_gr, self.fc_hidden_units, activation=tf.nn.elu
+        # )
 
         treatments_network_layer = tf.layers.dense(
-            balancing_representation_gr, self.fc_hidden_units, activation=tf.nn.elu
+            balancing_representation, self.fc_hidden_units, activation=tf.nn.elu
         )
+
         treatment_logit_predictions = tf.layers.dense(
             treatments_network_layer, self.num_treatments, activation=None
         )
-        # treatment_prob_predictions = tf.nn.softmax(treatment_logit_predictions)
-        # return treatment_prob_predictions
-        return treatment_logit_predictions
+
+        treatment_prob_predictions = tf.nn.softmax(treatment_logit_predictions)
+
+        return treatment_prob_predictions
+        # return treatment_logit_predictions
 
     def build_outcomes(
         self,
@@ -116,9 +124,15 @@ class CRN_Model:
         outcome_network_input = tf.concat(
             [balancing_representation, current_treatments_reshape], axis=-1
         )
+
         outcome_network_layer = tf.layers.dense(
             outcome_network_input, self.fc_hidden_units, activation=tf.nn.elu
         )
+
+        # outcome_network_layer = tf.layers.dense(
+        #     outcome_network_input, self.fc_hidden_units, activation=tf.nn.elu
+        # )
+
         outcome_predictions = tf.layers.dense(
             outcome_network_layer, self.num_outputs, activation=None
         )
@@ -141,6 +155,8 @@ class CRN_Model:
             self.outputs, self.predictions, self.active_entries
         )
         self.loss = self.loss_outcomes + self.loss_treatments
+        # self.loss = self.loss_outcomes #+ self.loss_treatments
+
         optimizer = self.get_optimizer()
 
         # Setup tensorflow
@@ -187,12 +203,17 @@ class CRN_Model:
                     training_loss,
                     training_loss_outcomes,
                     training_loss_treatments,
+                    predictions
                 ) = self.sess.run(
-                    [optimizer, self.loss, self.loss_outcomes, self.loss_treatments],
+                    [optimizer, self.loss, self.loss_outcomes, self.loss_treatments, self.predictions],
                     feed_dict=feed_dict,
                 )
 
                 iteration += 1
+
+                # with open('./preds/predictions_all_zeros.pickle', "wb") as handle:
+                #     pickle.dump(predictions, handle, protocol=2)
+                # break
 
             logging.info(
                 "Epoch {} out of {} | total loss = {} | outcome loss = {} | "
@@ -532,6 +553,55 @@ class CRN_Model:
 
         return predictions
 
+    def get_total_predictions(self, dataset):
+        logging.info("Performing one-step-ahed prediction.")
+        dataset_size = dataset["current_covariates"].shape[0]
+
+        predictions = np.zeros(
+            shape=(dataset_size, self.max_sequence_length, self.num_outputs)
+        )
+
+        dataset_size = dataset["current_covariates"].shape[0]
+        if dataset_size > 10000:
+            batch_size = 10000
+        else:
+            batch_size = dataset_size
+
+        num_batches = int(dataset_size / batch_size) + 1
+
+        batch_id = 0
+        num_samples = 50
+        for (
+            batch_current_covariates,
+            batch_previous_treatments,
+            batch_current_treatments,
+            batch_init_state,
+        ) in self.gen_epoch(dataset, batch_size=batch_size, training_mode=False):
+            feed_dict = self.build_feed_dictionary(
+                batch_current_covariates,
+                batch_previous_treatments,
+                batch_current_treatments,
+                batch_init_state,
+                training_mode=False,
+            )
+
+            # Dropout samples
+            total_predictions = np.zeros(
+                shape=(batch_size, self.max_sequence_length, self.num_outputs)
+            )
+
+            for sample in range(num_samples):
+                predicted_outputs = self.sess.run(self.predictions, feed_dict=feed_dict)
+                predicted_outputs = np.reshape(
+                    predicted_outputs,
+                    newshape=(-1, self.max_sequence_length, self.num_outputs),
+                )
+                total_predictions += predicted_outputs
+            return total_predictions
+
+            total_predictions /= num_samples
+        return total_predictions
+
     def get_autoregressive_sequence_predictions(
         self, test_data, data_map, encoder_states, encoder_outputs, projection_horizon
     ):
@@ -590,11 +660,7 @@ class CRN_Model:
             ]
 
         for t in range(0, projection_horizon):
-            print(t)
             predictions = self.get_predictions(current_dataset)
-
-            with open('./all_zeros_ones/all_zeros.pickle', "wb") as handle:
-                pickle.dump(predictions, handle, protocol=2)
 
             for i in range(num_patient_points):
                 predicted_outputs[i, t] = predictions[i, t]
@@ -602,8 +668,6 @@ class CRN_Model:
                     current_dataset["current_covariates"][i, t + 1, 0] = predictions[
                         i, t, 0
                     ]
-            with open('./all_zeros_ones/all_zeros.pickle_pre', "wb") as handle:
-                pickle.dump(predictions, handle, protocol=2)
 
         test_data["predicted_outcomes"] = predicted_outputs
 
@@ -620,11 +684,16 @@ class CRN_Model:
         #     (-target_treatments * tf.log(treatment_predictions + 1e-8)) * active_entries
         # ) / tf.reduce_sum(active_entries)
 
-        mse_loss = tf.reduce_sum(
-            -tf.square(target_treatments - treatment_predictions) * active_entries
-        ) / tf.reduce_sum(active_entries)
+        cross_entropy_loss = tf.reduce_sum(
+            (-target_treatments * tf.log(treatment_predictions + 1e-8))
+        ) # treatment_predictions converges to 0 - it makes loss nan.
 
-        return mse_loss
+        # mse_loss = tf.reduce_sum(
+        #     -tf.square(target_treatments - treatment_predictions) * active_entries
+        # ) / tf.reduce_sum(active_entries)
+        # return mse_loss
+
+        return cross_entropy_loss
 
     def compute_loss_predictions(self, outputs, predictions, active_entries):
         predictions = tf.reshape(
@@ -633,6 +702,10 @@ class CRN_Model:
         mse_loss = tf.reduce_sum(
             tf.square(outputs - predictions) * active_entries
         ) / tf.reduce_sum(active_entries)
+
+        # mse_loss = tf.reduce_sum(
+        #     tf.square(outputs - predictions)
+        # )
 
         return mse_loss
 

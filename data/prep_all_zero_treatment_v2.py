@@ -7,18 +7,9 @@ pickle_map_lv = dict()
 
 # pickle_map = pickle.load(open("../results/new_cancer_sim_2_2.p", "rb"))  # original data used for cancer simul
 
-lv = pd.read_csv("./dl_qtr.csv")
+lv = pd.read_csv("./lv.csv")
 
-# lv = lv.dropna()
-# test = lv[lv['cal_qtr'].isnull()]
-# def transform(row):
-#     val = row['cal_qtr']
-#     year, qtr = val.split('Q')
-#     return int(year) + 0.25 * (int(qtr) -1)
-#
-# lv['qtr'] = lv.apply(transform, axis=1)
-
-
+qtr = lv["qtr"]
 
 gvkeys = list(set(lv["gvkey"]))
 gvkeys.sort()  # ascending
@@ -30,7 +21,7 @@ niq_adj_vol = np.zeros((num_gvkeys, num_time_steps))
 
 # a
 amount = np.zeros((num_gvkeys, num_time_steps))
-amount_bool = np.zeros((num_gvkeys, num_time_steps))
+amount_bool = np.ones((num_gvkeys, num_time_steps))
 
 # x
 atq_adj = np.zeros((num_gvkeys, num_time_steps))
@@ -67,6 +58,7 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
         ts = int((row["qtr"] - min_qtr) * 4)
         # y
         niq_adj_vol[gvkey_idx, ts] = row["niq_adj_vol"]
+        # niq_adj_vol[gvkey_idx, ts + 1] = subset.loc[index + 1, "niq_adj_vol"]
         # v
         naics[gvkey_idx] = int(row["naics"])
         # x
@@ -76,21 +68,20 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
         emp[gvkey_idx, ts] = row["emp"]
         mkvaltq_adj[gvkey_idx, ts] = row["mkvaltq_adj"]
         PRisk[gvkey_idx, ts] = row["PRisk"]
-        timecode[gvkey_idx, ts] = row["qtr"]
+        # timecode[gvkey_idx, ts] = row["qtr"]
         # a
-        amount_bool[gvkey_idx, ts] = row["lobby_qtr"]
-        if amount_bool[gvkey_idx, ts] > 0:
-            amount_bool[gvkey_idx, ts] = 1
+        # amount_bool[gvkey_idx, ts] = row["Unnamed: 0"]
+        # if amount_bool[gvkey_idx, ts] > 0:
+        #     amount_bool[gvkey_idx, ts] = 1
+        # pass
         #meta
-        # active_entries[gvkey_idx, ts] = 1
+        active_entries[gvkey_idx, ts] = 1
 
 random.seed(17800)
 random.shuffle(gvkeys)
-
-# num_train = int(np.floor(len(gvkeys) * 0.8))
-num_train =len(gvkeys)
-# num_valid = int(np.floor(len(gvkeys) * 0.1))
-# num_test = int(len(gvkeys) - (num_train + num_valid))
+num_train = int(np.floor(len(gvkeys) * 0.8))
+num_valid = int(np.floor(len(gvkeys) * 0.1))
+num_test = int(len(gvkeys) - (num_train + num_valid))
 
 train_gvkeys = gvkeys[:num_train]
 valid_gvkeys = gvkeys[num_train : num_train + num_valid]
@@ -182,7 +173,6 @@ def get_scaling_params(training_data):
     means = {}
     stds = {}
     seq_lengths = training_data["sequence_lengths"]
-
     for k in real_idx:
         active_values = []
         for i in range(seq_lengths.shape[0]):
@@ -206,7 +196,7 @@ scaling_data = get_scaling_params(pickle_map_lv['training_data'])
 
 pickle_map_lv['scaling_data'] = scaling_data
 
-with open("./pickle_map_dl_bool_v2", "wb") as handle:
+with open("./pickle_map_dl_bool_all_ones", "wb") as handle:
     pickle.dump(pickle_map_lv, handle, protocol=2)
 
 if __name__ == "__main__":

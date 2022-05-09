@@ -71,7 +71,16 @@ def fit_CRN_decoder(
             logging.info(
                 "Current hyperparams used for training \n {}".format(hyperparams)
             )
-            model = CRN_Model(params, hyperparams, b_train_decoder=True)
+            # model = CRN_Model(params, hyperparams, b_train_decoder=True)
+
+            # model = load_trained_model(
+            #     dataset_train,
+            #     decoder_hyperparams_file,
+            #     model_name,
+            #     model_dir,
+            #     b_decoder_model=True,
+            # )
+
             model.train(dataset_train, dataset_val, model_name, model_dir)
             validation_mse, _ = model.evaluate_predictions(dataset_val)
 
@@ -94,8 +103,10 @@ def fit_CRN_decoder(
         best_hyperparams = {
             "br_size": 18,
             "rnn_keep_prob": 0.9,
-            "fc_hidden_units": 36,
+            # "fc_hidden_units": 36,
+            "fc_hidden_units": 128,
             "batch_size": 1024,
+            # "batch_size": 19581,
             "learning_rate": 0.001,
             "rnn_hidden_units": encoder_best_hyperparams["br_size"],
         }
@@ -124,7 +135,7 @@ def process_seq_data(data_map, states, projection_horizon):
 
     seq2seq_state_inits = np.zeros((num_seq2seq_rows, states.shape[-1]))
     seq2seq_previous_treatments = np.zeros(
-        (num_seq2seq_rows, projection_horizon, previous_treatments.shape[-1])
+        (num_seq2seq_rows-num_patients, projection_horizon, previous_treatments.shape[-1])
     )
     seq2seq_current_treatments = np.zeros(
         (num_seq2seq_rows, projection_horizon, current_treatments.shape[-1])
@@ -146,35 +157,42 @@ def process_seq_data(data_map, states, projection_horizon):
 
         sequence_length = int(sequence_lengths[i])
 
-        for t in range(1, sequence_length):  # shift outputs back by 1
+        for t in range(1, sequence_length-1):  # shift outputs back by 1
+        # # for t in range(1, sequence_length-projection_horizon*3):  # shift outputs back by 1
+        #     try:
             seq2seq_state_inits[total_seq2seq_rows, :] = states[
-                i, t - 1, :
-            ]  # previous state output
+                                                         i, t - 1, :
+                                                         ]  # previous state output
 
             max_projection = min(projection_horizon, sequence_length - t)
 
             # seq2seq_active_entries[
             #     total_seq2seq_rows, :max_projection, :
             # ] = active_entries[i, t : t + max_projection, :]
-            seq2seq_active_entries[
-                total_seq2seq_rows, :max_projection, :
-            ] = active_entries[i, t : t + max_projection, :, 0]
 
             seq2seq_previous_treatments[
                 total_seq2seq_rows, :max_projection, :
             ] = previous_treatments[i, t - 1 : t + max_projection - 1, :]
+
+
             seq2seq_current_treatments[
                 total_seq2seq_rows, :max_projection, :
             ] = current_treatments[i, t : t + max_projection, :]
+
             seq2seq_outputs[total_seq2seq_rows, :max_projection, :] = outputs[
-                i, t : t + max_projection, :
-            ]
+                                                                      i, t: t + max_projection, :
+                                                                      ]
             seq2seq_sequence_lengths[total_seq2seq_rows] = max_projection
             seq2seq_current_covariates[
-                total_seq2seq_rows, :max_projection, :
-            ] = current_covariates[i, t : t + max_projection, :]
+            total_seq2seq_rows, :max_projection, :
+            ] = current_covariates[i, t: t + max_projection, :]
 
             total_seq2seq_rows += 1
+
+            # except (ValueError,IndexError):
+            #     pass
+
+
 
     # Filter everything shorter
     seq2seq_state_inits = seq2seq_state_inits[:total_seq2seq_rows, :]
@@ -229,7 +247,8 @@ def process_counterfactual_seq_test_data(
     seq2seq_outputs = np.zeros(
         (num_patient_points, projection_horizon, outputs.shape[-1])
     )
-    seq2seq_active_entries = np.zeros((num_patient_points, projection_horizon, 1))
+    # seq2seq_active_entries = np.zeros((num_patient_points, projection_horizon, 1))
+    seq2seq_active_entries = np.ones((num_patient_points, projection_horizon, 1))
     seq2seq_sequence_lengths = np.zeros(num_patient_points)
 
     for i in range(num_patient_points):
@@ -292,10 +311,10 @@ def test_CRN_decoder(
     )
     training_br_states = encoder_model.get_balancing_reps(training_processed)
 
-    with open('./plot/training_br_states.pickle', "wb") as handle:
+    with open('./plot/training_br_states_small_binary.pickle', "wb") as handle:
         pickle.dump(training_br_states, handle, protocol=2)
 
-    with open('./plot/training_processed.pickle', "wb") as handle:
+    with open('./plot/training_processed_small_binary.pickle', "wb") as handle:
         pickle.dump(training_processed, handle, protocol=2)
 
     validation_br_states = encoder_model.get_balancing_reps(validation_processed)
@@ -307,64 +326,95 @@ def test_CRN_decoder(
         validation_processed, validation_br_states, max_projection_horizon
     )
 
-    # fit_CRN_decoder(
-    #     dataset_train=training_seq_processed,
-    #     dataset_val=validation_seq_processed,
-    #     model_dir=models_dir,
-    #     model_name=decoder_model_name,
-    #     encoder_hyperparams_file=encoder_hyperparams_file,
-    #     decoder_hyperparams_file=decoder_hyperparams_file,
-    #     b_hyperparam_opt=b_decoder_hyperparm_tuning,
-    # )
+    fit_CRN_decoder(
+        dataset_train=training_seq_processed,
+        dataset_val=validation_seq_processed,
+        model_dir=models_dir,
+        model_name=decoder_model_name,
+        encoder_hyperparams_file=encoder_hyperparams_file,
+        decoder_hyperparams_file=decoder_hyperparams_file,
+        b_hyperparam_opt=b_decoder_hyperparm_tuning,
+    )
 
     # test_data_seq_actions = pickle_map["test_data_seq"]
-    test_data = pickle_map["test_data"]
+    # test_data = pickle_map["test_data"]
+
     # test_processed = get_processed_data(pickle_map["test_data_seq"], scaling_data)
-    test_processed = get_processed_data(test_data, scaling_data)
+
+    # test_processed = get_processed_data(test_data, scaling_data)
+
+    training_processed = get_processed_data(training_data, scaling_data)
+
+    # encoder_model = load_trained_model(
+    #     test_processed, encoder_hyperparams_file, encoder_model_name, models_dir
+    # )
 
     encoder_model = load_trained_model(
-        test_processed, encoder_hyperparams_file, encoder_model_name, models_dir
-    )
-    test_br_states = encoder_model.get_balancing_reps(test_processed)
-    test_br_outputs = encoder_model.get_predictions(test_processed)
-
-    test_seq_processed = process_counterfactual_seq_test_data(
-        # test_data_seq_actions, test_processed, test_br_states, projection_horizon
-        test_data, test_processed, test_br_states, projection_horizon
-    )
-    CRN_deocoder = load_trained_model(
-        test_seq_processed,
-        decoder_hyperparams_file,
-        decoder_model_name,
-        models_dir,
-        b_decoder_model=True,
+        training_processed, encoder_hyperparams_file, encoder_model_name, models_dir
     )
 
-    seq_predictions = CRN_deocoder.get_autoregressive_sequence_predictions(
-        # test_data_seq_actions,
-        test_data,
-        test_processed,
-        test_br_states,
-        test_br_outputs,
-        projection_horizon,
-    )
-    seq_predictions = (
-        seq_predictions * test_seq_processed["output_stds"]
-        + test_seq_processed["output_means"]
-    )
+    # test_br_states = encoder_model.get_balancing_reps(test_processed)
+    # test_br_outputs = encoder_model.get_predictions(test_processed)
+    test_br_states = encoder_model.get_balancing_reps(training_processed)
+    test_br_outputs = encoder_model.get_predictions(training_processed)
 
-    # During the simulation some trajectories in the test set have nan values. These were removed when
-    # computing the test metric. This only happens for the test set where we generate counterfactuals under different
-    # treatment plans.
-    nan_idx = np.unique(np.where(np.isnan(test_seq_processed["unscaled_outputs"]))[0])
-    not_nan = np.array([i for i in range(seq_predictions.shape[0]) if i not in nan_idx])
-    mse = get_mse_at_follow_up_time(
-        seq_predictions[not_nan],
-        test_seq_processed["unscaled_outputs"][not_nan],
-        test_seq_processed["active_entries"][not_nan],
-    )
+    with open('./inferences/test_br_states.pickle', "wb") as handle:
+        pickle.dump(test_br_states, handle, protocol=2)
 
-    # rmse = np.sqrt(mse[projection_horizon - 1]) / 1150 * 100  # Max tumour volume = 1150
-    rmse = np.sqrt(mse[projection_horizon - 1]) / 8622 * 100  # Max tumour volume = 1150
+    with open('./inferences/test_br_outputs.pickle', "wb") as handle:
+        pickle.dump(test_br_outputs, handle, protocol=2)
 
-    return rmse
+    # #
+    # test_seq_processed = process_counterfactual_seq_test_data(
+    #     # test_data_seq_actions, test_processed, test_br_states, projection_horizon
+    #     test_data, test_processed, test_br_states, projection_horizon
+    # )
+
+    print("here")
+
+    # CRN_deocoder = load_trained_model(
+    #     training_seq_processed,
+    #     decoder_hyperparams_file,
+    #     decoder_model_name,
+    #     models_dir,
+    #     b_decoder_model=True,
+    # )
+    # CRN_deocoder.train(training_seq_processed, validation_seq_processed, decoder_model_name, models_dir)
+
+    # CRN_deocoder = load_trained_model(
+    #     test_seq_processed,
+    #     decoder_hyperparams_file,
+    #     decoder_model_name,
+    #     models_dir,
+    #     b_decoder_model=True,
+    # )
+    #
+    # seq_predictions = CRN_deocoder.get_autoregressive_sequence_predictions(
+    #     # test_data_seq_actions,
+    #     test_data,
+    #     test_processed,
+    #     test_br_states,
+    #     test_br_outputs,
+    #     projection_horizon,
+    # )
+    #
+    # seq_predictions = (
+    #     seq_predictions * test_seq_processed["output_stds"]
+    #     + test_seq_processed["output_means"]
+    # )
+    #
+    # # During the simulation some trajectories in the test set have nan values. These were removed when
+    # # computing the test metric. This only happens for the test set where we generate counterfactuals under different
+    # # treatment plans.
+    # nan_idx = np.unique(np.where(np.isnan(test_seq_processed["unscaled_outputs"]))[0])
+    # not_nan = np.array([i for i in range(seq_predictions.shape[0]) if i not in nan_idx])
+    # mse = get_mse_at_follow_up_time(
+    #     seq_predictions[not_nan],
+    #     test_seq_processed["unscaled_outputs"][not_nan],
+    #     test_seq_processed["active_entries"][not_nan],
+    # )
+    #
+    # # rmse = np.sqrt(mse[projection_horizon - 1]) / 1150 * 100  # Max tumour volume = 1150
+    # rmse = np.sqrt(mse[projection_horizon - 1]) / 8622 * 100  # Max tumour volume = 1150
+    #
+    # return rmse

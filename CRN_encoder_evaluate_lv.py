@@ -82,10 +82,18 @@ def fit_CRN_encoder(
 
     else:
         logging.info("Using default hyperparameters")
+        # best_hyperparams = {
+        #     "rnn_hidden_units": 24,
+        #     "br_size": 12,
+        #     "fc_hidden_units": 36,
+        #     "learning_rate": 0.01,
+        #     "batch_size": 128,
+        #     "rnn_keep_prob": 0.9,
+        # }
         best_hyperparams = {
-            "rnn_hidden_units": 24,
-            "br_size": 12,
-            "fc_hidden_units": 36,
+            "rnn_hidden_units": 36,
+            "br_size": 36,
+            "fc_hidden_units": 144,
             "learning_rate": 0.01,
             "batch_size": 128,
             "rnn_keep_prob": 0.9,

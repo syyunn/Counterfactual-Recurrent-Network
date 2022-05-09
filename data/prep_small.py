@@ -7,7 +7,7 @@ pickle_map_lv = dict()
 
 # pickle_map = pickle.load(open("../results/new_cancer_sim_2_2.p", "rb"))  # original data used for cancer simul
 
-lv = pd.read_csv("./dl_qtr.csv")
+lv = pd.read_csv("./lv.csv")
 
 # lv = lv.dropna()
 # test = lv[lv['cal_qtr'].isnull()]
@@ -17,7 +17,6 @@ lv = pd.read_csv("./dl_qtr.csv")
 #     return int(year) + 0.25 * (int(qtr) -1)
 #
 # lv['qtr'] = lv.apply(transform, axis=1)
-
 
 
 gvkeys = list(set(lv["gvkey"]))
@@ -76,9 +75,10 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
         emp[gvkey_idx, ts] = row["emp"]
         mkvaltq_adj[gvkey_idx, ts] = row["mkvaltq_adj"]
         PRisk[gvkey_idx, ts] = row["PRisk"]
-        timecode[gvkey_idx, ts] = row["qtr"]
+        # timecode[gvkey_idx, ts] = row["qtr"]
         # a
-        amount_bool[gvkey_idx, ts] = row["lobby_qtr"]
+        # amount_bool[gvkey_idx, ts] = row["lobby_qtr"]
+        amount_bool[gvkey_idx, ts] = row["amount"]
         if amount_bool[gvkey_idx, ts] > 0:
             amount_bool[gvkey_idx, ts] = 1
         #meta
@@ -87,10 +87,10 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
 random.seed(17800)
 random.shuffle(gvkeys)
 
-# num_train = int(np.floor(len(gvkeys) * 0.8))
-num_train =len(gvkeys)
-# num_valid = int(np.floor(len(gvkeys) * 0.1))
-# num_test = int(len(gvkeys) - (num_train + num_valid))
+num_train = int(np.floor(len(gvkeys) * 0.8))
+# num_train =len(gvkeys)
+num_valid = int(np.floor(len(gvkeys) * 0.1))
+num_test = int(len(gvkeys) - (num_train + num_valid))
 
 train_gvkeys = gvkeys[:num_train]
 valid_gvkeys = gvkeys[num_train : num_train + num_valid]
@@ -206,7 +206,7 @@ scaling_data = get_scaling_params(pickle_map_lv['training_data'])
 
 pickle_map_lv['scaling_data'] = scaling_data
 
-with open("./pickle_map_dl_bool_v2", "wb") as handle:
+with open("./pickle_map_small_v2", "wb") as handle:
     pickle.dump(pickle_map_lv, handle, protocol=2)
 
 if __name__ == "__main__":
