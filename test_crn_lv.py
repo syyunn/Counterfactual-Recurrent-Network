@@ -15,7 +15,7 @@ def init_arg():
     # parser.add_argument("--chemo_coeff", default=2, type=int)
     # parser.add_argument("--radio_coeff", default=2, type=int)
     parser.add_argument("--results_dir", default="results")
-    parser.add_argument("--model_name", default="crn_test_lv_1")
+    parser.add_argument("--model_name", default="dlv2")
     parser.add_argument("--b_encoder_hyperparm_tuning", default=False)
     parser.add_argument("--b_decoder_hyperparm_tuning", default=False)
     return parser.parse_args()
@@ -30,13 +30,14 @@ if __name__ == "__main__":
 
     # it looks like chemo_coeff and radio_coeff doesn't matter once we have our own database.
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
+
     # pickle_map = get_cancer_sim_data(chemo_coeff=args.chemo_coeff,
     #                                  radio_coeff=args.radio_coeff,
     #                                  b_load=True,
     #                                  b_save=True,
     #                                  model_root=args.results_dir)
 
-    with open("./data/pickle_map_lv_all_zeros", "rb") as handle:
+    with open("./data/pickle_map_small_v2", "rb") as handle:
         pickle_map = pickle.load(handle)
 
     encoder_model_name = "encoder_" + args.model_name
@@ -63,14 +64,15 @@ if __name__ == "__main__":
 
     """
     The counterfactual test data for a sequence of treatments in the future was simulated for a 
-    projection horizon of 5 timesteps.    
+    projection horizon of 5 time steps.    
     """
-
-    # max_projection_horizon = 10
-    # projection_horizon = 10
+    #
+    # max_projection_horizon = 8
+    # projection_horizon = 8
 
     max_projection_horizon = 2
     projection_horizon = 2
+
 
     rmse_decoder = test_CRN_decoder(
         pickle_map=pickle_map,
@@ -88,7 +90,7 @@ if __name__ == "__main__":
     #     "Chemo coeff {} | Radio coeff {}".format(args.chemo_coeff, args.radio_coeff)
     # )
     print("RMSE for one-step-ahead prediction.")
-    print(rmse_encoder)
+    # print(rmse_encoder)
 
-    print(f"Results for {max_projection_horizon}-step-ahead prediction.")
+    # print(f"Results for {max_projection_horizon}-step-ahead prediction.")
     # print(rmse_decoder)
