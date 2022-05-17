@@ -20,7 +20,8 @@ num_time_steps = int((max(lv["qtr"]) - min(lv["qtr"])) * 4 + 1)
 niq_adj_vol = np.zeros((num_gvkeys, num_time_steps))
 
 # a
-amount = np.zeros((num_gvkeys, num_time_steps))
+# amount = np.zeros((num_gvkeys, num_time_steps))
+amount = np.full((num_gvkeys, num_time_steps), 65000)
 amount_bool = np.zeros((num_gvkeys, num_time_steps))
 
 # x
@@ -68,7 +69,8 @@ for gvkey_idx, gvkey in enumerate(gvkeys):
         PRisk[gvkey_idx, ts] = row["PRisk"]
         # timecode[gvkey_idx, ts] = row["qtr"]
         # a
-        amount[gvkey_idx, ts] = row["amount"]
+        # amount[gvkey_idx, ts] = row["amount"]
+        # amount[gvkey_idx, ts] = 0
         # if amount[gvkey_idx, ts] > 0:
         #     amount_bool[gvkey_idx, ts] = 1
         # pass
@@ -160,7 +162,8 @@ pickle_map_lv["test_data"] = test_data
 
 # scaling_data
 def get_scaling_params(training_data):
-    real_idx = ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "amount"]
+
+    real_idx = ["niq_adj_vol", "atq_adj", "niq_adj", "revtq_adj", "mkvaltq_adj", "emp", "PRisk", "timecode", "amount_bool", "amount"]
 
     # df = pd.DataFrame({k: sim[k] for k in real_idx})
     means = {}
@@ -189,7 +192,8 @@ scaling_data = get_scaling_params(pickle_map_lv['training_data'])
 
 pickle_map_lv['scaling_data'] = scaling_data
 
-with open("./pickle_map_lv_amount_all_zeros", "wb") as handle:
+with open("./pickle_map_lv_amount_all_avg", "wb") as handle:
+# with open("./pickle_map_lv_amount_all_zeros", "wb") as handle:
     pickle.dump(pickle_map_lv, handle, protocol=2)
 
 if __name__ == "__main__":
